@@ -1,0 +1,160 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Request Cleaning</title>
+  <style>
+    body { font-family: Arial, sans-serif; max-width: 900px; margin: 40px auto; padding: 0 16px; }
+    label { display:block; margin-top: 12px; }
+    input, select, textarea { width: 520px; max-width: 100%; padding: 10px; margin-top: 4px; }
+    .row { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+    button { margin-top: 14px; padding: 10px 14px; cursor: pointer; }
+    .msg { margin-top: 12px; padding: 12px; border-radius: 10px; }
+    .ok { background: #e7ffe7; border: 1px solid #7ad27a; }
+    .bad { background: #ffe7e7; border: 1px solid #d27a7a; }
+    small { color:#555; }
+  </style>
+</head>
+<body>
+  <p><a href="/">← Home</a></p>
+  <h1>Request Estimate / Book</h1>
+  <small>Choose a date and time. Click “Check Availability” before submitting.</small>
+
+  <label>Full Name *</label>
+  <input id="fullName" placeholder="Your name" />
+
+  <label>Email *</label>
+  <input id="email" type="email" placeholder="you@email.com" />
+
+  <label>Phone *</label>
+  <input id="phone" placeholder="(555) 555-5555" />
+
+  <div class="row">
+    <div>
+      <label>Property Type *</label>
+      <select id="propertyType">
+        <option value="residential">Residential</option>
+        <option value="commercial">Commercial</option>
+      </select>
+    </div>
+    <div>
+      <label>Service Type *</label>
+      <select id="serviceType">
+        <option value="standard">Standard</option>
+        <option value="deep">Deep</option>
+      </select>
+    </div>
+  </div>
+
+  <label>Address *</label>
+  <input id="address" placeholder="Street, City, State" />
+
+  <div class="row">
+    <div>
+      <label>Date *</label>
+      <input id="date" type="date" />
+    </div>
+    <div>
+      <label>Time *</label>
+      <input id="time" type="time" />
+    </div>
+  </div>
+
+  <button id="checkBtn" type="button">Check Availability</button>
+  <button id="submitBtn" type="button">Submit Request</button>
+
+  <div id="availability"></div>
+  <div id="msg"></div>
+
+  <script>
+    const availabilityEl = document.getElementById("availability");
+    const msgEl = document.getElementById("msg");
+
+    function show(el, text, ok) {
+      el.className = "msg " + (ok ? "ok" : "bad");
+      el.textContent = text;
+    }
+
+    function getPayload() {
+      return {
+        fullName: document.getElementById("fullName").value.trim(),
+        email: document.getElementById("email").value.trim(),
+        phone: document.getElementById("phone").value.trim(),
+        propertyType: document.getElementById("propertyType").value,
+        serviceType: document.getElementById("serviceType").value,
+        address: document.getElementById("address").value.trim(),
+        date: document.getElementById("date").value,
+        time: document.getElementById("time").value
+      };
+    }
+
+    document.getElementById("checkBtn").addEventListener("click", async () => {
+      availabilityEl.className = "";
+      availabilityEl.textContent = "";
+      msgEl.className = "";
+      msgEl.textContent = "";
+
+      const { date, time } = getPayload();
+
+      if (!date || !time) {
+        show(availabilityEl, "Pick a date and time first.", false);
+        return;
+      }
+
+      try {
+        const res = await fetch(`/api/check?date=${encodeURIComponent(date)}&time=${encodeURIComponent(time)}`, { cache: "no-store" });
+        const data = await res.json();
+
+        if (!res.ok) {
+          show(availabilityEl, data.error || "Error checking availability.", false);
+          return;
+        }
+
+        show(
+          availabilityEl,
+          data.available
+            ? `✅ Available: ${data.dateTime}. You can submit now.`
+            : `❌ Not available: ${data.dateTime}. Choose another time.`,
+          data.available
+        );
+      } catch (e) {
+        show(availabilityEl, "Network error checking availability. Is the server running?", false);
+      }
+    });
+
+    document.getElementById("submitBtn").addEventListener("click", async () => {
+      availabilityEl.className = "";
+      availabilityEl.textContent = "";
+      msgEl.className = "";
+      msgEl.textContent = "";
+
+      const payload = getPayload();
+
+      if (!payload.fullName || !payload.email || !payload.phone || !payload.address || !payload.date || !payload.time) {
+        show(msgEl, "Please fill in all required fields (name, email, phone, address, date, time).", false);
+        return;
+      }
+
+      try {
+        const res = await fetch("/api/requests", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(payload)
+        });
+
+        const data = await res.json();
+
+        if (!res.ok) {
+          show(msgEl, data.error || "Error submitting request.", false);
+          return;
+        }
+
+        show(msgEl, `Submitted! Date/Time: ${data.request.dateTime}. Estimate: $${data.request.estimateUSD}.`, true);
+      } catch (e) {
+        show(msgEl, "Network error submitting request. Is the server running?", false);
+      }
+    });
+  </script>
+</body>
+</html>

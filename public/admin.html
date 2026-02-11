@@ -1,0 +1,132 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Admin Dashboard</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      max-width: 1000px;
+      margin: 40px auto;
+      padding: 0 16px;
+    }
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      margin-top: 20px;
+    }
+    th, td {
+      border: 1px solid #ccc;
+      padding: 8px;
+      text-align: left;
+    }
+    th {
+      background: #f0f0f0;
+    }
+    select, button, input {
+      padding: 6px;
+      margin: 4px 0;
+    }
+  </style>
+</head>
+<body>
+  <p><a href="/">← Home</a></p>
+  <h1>Admin Dashboard</h1>
+
+  <label>Admin Key:</label><br/>
+  <input id="key" placeholder="Enter Key">
+  <button id="load">Load Requests</button>
+
+  <div id="tableArea"></div>
+
+  <script>
+    async function loadRequests() {
+      const key = document.getElementById("key").value.trim();
+      const res = await fetch("/api/admin/requests", {
+        headers: { "x-admin-key": key }
+      });
+
+      const data = await res.json();
+      if (!res.ok) {
+        document.getElementById("tableArea").textContent = data.error || "Error";
+        return;
+      }
+
+      const rows = data.requests;
+      if (!rows.length) {
+        document.getElementById("tableArea").textContent = "No requests yet.";
+        return;
+      }
+
+      let html = `
+        <table>
+          <tr>
+            <th>Name</th>
+            <th>Email</th>
+            <th>Phone</th>
+            <th>Address</th>
+            <th>Date</th>
+            <th>Time</th>
+            <th>Service</th>
+            <th>Status</th>
+            <th>Update</th>
+          </tr>
+      `;
+
+      rows.forEach(r => {
+        html += `
+          <tr>
+            <td>${r.fullName}</td>
+            <td>${r.email}</td>
+            <td>${r.phone}</td>
+            <td>${r.address}</td>
+            <td>${r.date}</td>
+            <td>${r.time}</td>
+            <td>${r.serviceType}</td>
+            <td>
+              <select id="status-${r.id}">
+                <option ${r.status==="pending"?"selected":""}>pending</option>
+                <option ${r.status==="confirmed"?"selected":""}>confirmed</option>
+                <option ${r.status==="completed"?"selected":""}>completed</option>
+                <option ${r.status==="cancelled"?"selected":""}>cancelled</option>
+              </select>
+            </td>
+            <td>
+              <button onclick="updateStatus('${r.id}')">Save</button>
+            </td>
+          </tr>
+        `;
+      });
+
+      html += `</table>`;
+      document.getElementById("tableArea").innerHTML = html;
+    }
+
+    async function updateStatus(id) {
+      const key = document.getElementById("key").value.trim();
+      const status = document.getElementById(`status-${id}`).value;
+
+      const res = await fetch(`/api/admin/requests/${id}`, {
+        method: "PATCH",
+        headers: {
+          "Content-Type": "application/json",
+          "x-admin-key": key
+        },
+        body: JSON.stringify({ status })
+      });
+
+      const data = await res.json();
+      if (!res.ok) {
+        alert(data.error || "Error updating status");
+        return;
+      }
+
+      alert("Status updated!");
+      loadRequests();
+    }
+
+    document.getElementById("load").addEventListener("click", loadRequests);
+  </script>
+</body>
+</html>
