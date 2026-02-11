@@ -1,0 +1,21 @@
+[
+  {
+    "id": "18b94a4f3fb0319c4afe4050",
+    "createdAt": "2026-02-11T04:38:22.544Z",
+    "status": "confirmed",
+    "fullName": "Poke Poke",
+    "email": "poke123@gmail.com",
+    "phone": "(619)838-7442",
+    "serviceType": "standard",
+    "propertyType": "residential",
+    "address": "123 nevaland st lacey Wa",
+    "bedrooms": null,
+    "bathrooms": null,
+    "frequency": "one-time",
+    "date": "2026-02-27",
+    "time": "09:30",
+    "dateTime": "2026-02-27 09:30",
+    "notes": "",
+    "estimateUSD": 120
+  }
+]

@@ -18,7 +18,7 @@ app.use(express.urlencoded({ extended: true }));
 app.use(morgan("dev"));
 
 // Serve frontend files
-app.use(express.static(path.join(__dirname, "public")));
+app.use(express.static(path.join(__dirname, "..", "public")));
 
 // ---------- Simple JSON "DB" ----------
 const DATA_DIR = path.join(__dirname, "data");
@@ -210,7 +210,7 @@ app.patch("/api/admin/requests/:id", requireAdminKey, (req, res) => {
 
 // Catch-all (keep last)
 app.use((req, res) => {
-  res.sendFile(path.join(__dirname, "public", "index.html"));
+  res.sendFile(path.join(__dirname, "..", "public", "index.html"));
 });
 
 app.listen(PORT, () => {
